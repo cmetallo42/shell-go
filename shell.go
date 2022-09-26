@@ -12,7 +12,7 @@ import (
 
 const (
 	messageWelcome = `Welcome to shell-go`
-	messageHelp    = `You can type all basic linux shell commands`
+	messageHelp    = `You can type all basic shell commands extends with cd, help and exit`
 	messageExit    = `Exiting...`
 )
 
@@ -30,9 +30,24 @@ func getDirectory() string {
 var ErrNotFound = errors.New("command not found")
 
 func internal(args []string) (err error) {
+	home := ""
+
 	switch args[0] {
 	case "cd":
-		err = os.Chdir(args[1])
+		home, err = os.UserHomeDir()
+		if err != nil {
+			return err
+		}
+
+		if len(args) > 1 {
+			if args[1] == "~" {
+				err = os.Chdir(home)
+			} else {
+				err = os.Chdir(args[1])
+			}
+		} else {
+			err = os.Chdir(home)
+		}
 	case "h", "help":
 		fmt.Println(messageHelp)
 	case "exit", "q", "quit":
@@ -57,10 +72,16 @@ scan:
 		bi := bytes.Buffer{}
 		bo := bytes.Buffer{}
 
+	split:
 		for i := range splited {
 			args := strings.Split(splited[i], " ")
 
 			err := internal(args)
+
+			if err == nil {
+				continue split
+			}
+
 			if err != nil && err != ErrNotFound {
 				panic(err)
 			}
